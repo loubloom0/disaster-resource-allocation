@@ -258,7 +258,54 @@ async function claimsForm(o) {
     <div class="tablewrap"><table><thead><tr><th>Resource Name</th><th>Maximum Declared Units</th><th>Action</th></tr></thead><tbody>${resources.map(r => `<tr><td><b>${esc(r.name)}</b> <span class="muted">(${r.reusable ? 'Reusable' : 'Consumable'})</span></td>
       <td><input type="number" min="0" id="cl_${r.id}" value="${cur[r.id] ?? ''}" placeholder="None" style="width:110px"></td>
       <td><button class="btn sm" data-save="${r.id}">Save Claim</button></td></tr>`).join('')}</tbody></table></div>
-    <div class="toolbar" style="margin-top:16px"><button class="btn sec" onclick="closeModal()">Done</button></div>`);
+    <div class="toolbar claims-actions" style="margin-top:16px">
+      <button class="btn" id="claims_save_all" type="button">
+        <svg class="btn-icon save-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 3h12l4 4v14H3V3h2Zm2 2v5h10V5H7Zm0 14h10v-7H7v7Zm2-5h6v3H9v-3Z" fill="currentColor"/></svg>
+        <svg class="btn-icon loading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3a9 9 0 1 0 9 9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.5"/></svg>
+        <span id="claims_save_label">Save Claims</span>
+      </button>
+      <button class="btn sec" type="button" onclick="closeModal()">Done</button>
+    </div>`);
+  const saveAll = $('#claims_save_all');
+  saveAll.onclick = async () => {
+    if (saveAll.disabled) return;
+    const claimInputs = resources.map(r => ({ resourceId: r.id, input: $('#cl_' + r.id) }));
+    const invalid = claimInputs.find(({ input }) => input.value !== '' && (!input.checkValidity() || !Number.isInteger(input.valueAsNumber)));
+    if (invalid) {
+      invalid.input.reportValidity();
+      return;
+    }
+    const entries = claimInputs
+      .filter(({ input }) => input.value !== '')
+      .map(({ resourceId, input }) => ({ resourceId, maxClaim: Number(input.value) }));
+    if (!entries.length) return toast('Please specify at least one claim threshold', 'warn');
+
+    const rowSaves = [...document.querySelectorAll('[data-save]')];
+    saveAll.disabled = true;
+    saveAll.classList.add('is-loading');
+    saveAll.setAttribute('aria-busy', 'true');
+    $('#claims_save_label').textContent = 'Saving…';
+    rowSaves.forEach(button => { button.disabled = true; });
+    claimInputs.forEach(({ input }) => { input.disabled = true; });
+    let saved = 0;
+    try {
+      for (const claim of entries) {
+        await PUT(`/api/organizations/${o.id}/claims`, claim);
+        saved += 1;
+      }
+      toast(`Saved ${saved} ${saved === 1 ? 'claim' : 'claims'}`);
+    } catch (e) {
+      const detail = saved ? `Saved ${saved} of ${entries.length} claims. ` : '';
+      toast(detail + e.message, 'err');
+    } finally {
+      saveAll.disabled = false;
+      saveAll.classList.remove('is-loading');
+      saveAll.removeAttribute('aria-busy');
+      $('#claims_save_label').textContent = 'Save Claims';
+      rowSaves.forEach(button => { button.disabled = false; });
+      claimInputs.forEach(({ input }) => { input.disabled = false; });
+    }
+  };
   document.querySelectorAll('[data-save]').forEach(b => b.onclick = async () => {
     const v = $('#cl_' + b.dataset.save).value;
     if (v === '') return toast('Please specify a claim threshold', 'warn');
