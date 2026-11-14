@@ -1,0 +1,115 @@
+/**
+ * DRAS 2.0 Semantic Operational Alerts & Pulsing Indicators
+ */
+
+/* Status Indicators */
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.critical {
+  background-color: var(--critical);
+  box-shadow: 0 0 8px var(--critical);
+  animation: pulseCritical 2.4s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+.status-dot.warning {
+  background-color: var(--warning);
+  box-shadow: 0 0 8px var(--warning);
+  animation: pulseWarning 2.4s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+.status-dot.success {
+  background-color: var(--success);
+  box-shadow: 0 0 6px var(--success);
+}
+
+.status-dot.info {
+  background-color: var(--info);
+}
+
+/* Pulsing Keyframes */
+@keyframes pulseCritical {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 83, 80, 0.6);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.15);
+    box-shadow: 0 0 0 6px rgba(239, 83, 80, 0);
+  }
+}
+
+@keyframes pulseWarning {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(240, 164, 67, 0.6);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.15);
+    box-shadow: 0 0 0 6px rgba(240, 164, 67, 0);
+  }
+}
+
+/* Alert Box Containers */
+.alert-box {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background-color: var(--card);
+  margin-bottom: var(--space-md);
+}
+
+.alert-box.critical {
+  border-color: rgba(239, 83, 80, 0.4);
+  background: linear-gradient(90deg, rgba(239, 83, 80, 0.08) 0%, var(--card) 100%);
+}
+
+.alert-box.warning {
+  border-color: rgba(240, 164, 67, 0.4);
+  background: linear-gradient(90deg, rgba(240, 164, 67, 0.08) 0%, var(--card) 100%);
+}
+
+.alert-box-title {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
+}
+
+.alert-box.critical .alert-box-title {
+  color: var(--critical);
+}
+
+.alert-box.warning .alert-box-title {
+  color: var(--warning);
+}
+
+.alert-box-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Reduced Motion Override */
+@media (prefers-reduced-motion: reduce) {
+  .status-dot.critical,
+  .status-dot.warning {
+    animation: none !important;
+    box-shadow: none !important;
+  }
+}

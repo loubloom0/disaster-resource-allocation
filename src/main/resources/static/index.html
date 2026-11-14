@@ -3,23 +3,41 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>DRAS – EOC Command Center</title>
+  <title>DRAS 2.0 – Emergency Operations Center</title>
+  <!-- Google Fonts: Space Grotesk & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
   <aside id="sidebar">
-    <div class="brand"><span class="logo">⛑</span><div><b>DRAS</b><small>EOC Command Center</small></div></div>
+    <div class="brand">
+      <span class="logo">⛑</span>
+      <div>
+        <b>DRAS 2.0</b>
+        <small>EOC Command Center</small>
+      </div>
+    </div>
     <nav id="nav">
-      <a href="#dashboard">Command Center</a>
-      <a href="#inventory">Resource Inventory</a>
-      <a href="#organizations">Organization Directory</a>
-      <a href="#requests">Requests Queue</a>
-      <a href="#allocations">Allocation Center</a>
-      <a href="#scheduling">Scheduling Simulator</a>
-      <a href="#bankers">Banker's Simulator</a>
-      <a href="#metrics">Performance Metrics</a>
-      <a href="#system">System Status</a>
+      <a href="#dashboard"><span class="nav-icon">📊</span> Command Center</a>
+      <a href="#inventory"><span class="nav-icon">📦</span> Resource Inventory</a>
+      <a href="#organizations"><span class="nav-icon">🏢</span> Organization Directory</a>
+      <a href="#requests"><span class="nav-icon">📥</span> Requests Queue</a>
+      <a href="#allocations"><span class="nav-icon">⚡</span> Allocation Center</a>
+      <a href="#scheduling"><span class="nav-icon">⏱</span> Scheduling Simulator</a>
+      <a href="#bankers"><span class="nav-icon">🔒</span> Banker's Simulator</a>
+      <a href="#metrics"><span class="nav-icon">📈</span> Performance Metrics</a>
+      <a href="#system"><span class="nav-icon">🖥</span> System Status</a>
     </nav>
+    <div class="user-profile-badge">
+      <div class="user-profile-avatar">SA</div>
+      <div class="user-profile-info">
+        <div class="user-profile-name">System Operator</div>
+        <div class="user-profile-role">EOC Controller</div>
+      </div>
+      <span class="status-dot success" title="Operational"></span>
+    </div>
     <div class="sim-note">Academic simulator – not connected to real emergency services.</div>
   </aside>
   <main>

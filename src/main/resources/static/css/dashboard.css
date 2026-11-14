@@ -1,0 +1,179 @@
+/**
+ * DRAS 2.0 Section Layout Families & Double-Exposure Imagery
+ * Layout A: Wide Photographic Header
+ * Layout B: Split Composition
+ * Layout C: Abstract Composition
+ */
+
+/* Section Hero Base Container */
+.section-hero {
+  position: relative;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: var(--space-lg);
+  background-color: var(--card);
+  box-shadow: var(--shadow-md);
+}
+
+.section-hero-content {
+  position: relative;
+  z-index: 2;
+  padding: var(--space-xl);
+}
+
+.section-hero-title {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.section-hero-desc {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  max-width: 640px;
+  margin-bottom: var(--space-md);
+}
+
+.section-hero-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+/* ========================================================
+   LAYOUT A — Wide Photographic Header
+   Used for: Command Center, Requests Queue, Allocation Center
+   ======================================================== */
+.section-hero.layout-a {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+}
+
+.section-hero.layout-a .section-hero-bg {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 65%;
+  background-size: cover;
+  background-position: right center;
+  background-repeat: no-repeat;
+  opacity: 0.38;
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.8) 40%, black 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.8) 40%, black 100%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.section-hero.layout-a::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--card) 30%, rgba(35, 37, 42, 0.85) 60%, rgba(35, 37, 42, 0.2) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ========================================================
+   LAYOUT B — Split Composition
+   Used for: Resource Inventory, Organization Directory,
+             Scheduling Simulator, System Status
+   ======================================================== */
+.section-hero.layout-b {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  min-height: 180px;
+}
+
+.section-hero.layout-b .section-hero-aside {
+  position: relative;
+  overflow: hidden;
+  border-left: 1px solid var(--border);
+  background-color: var(--sidebar);
+}
+
+.section-hero.layout-b .section-hero-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.35;
+  mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+  mix-blend-mode: luminosity;
+  pointer-events: none;
+}
+
+/* ========================================================
+   LAYOUT C — Abstract Composition
+   Used for: Banker's Algorithm, Performance Metrics
+   ======================================================== */
+.section-hero.layout-c {
+  min-height: 190px;
+  background: radial-gradient(circle at 85% 50%, rgba(141, 175, 196, 0.08) 0%, transparent 60%), var(--card);
+}
+
+.section-hero.layout-c .section-hero-bg {
+  position: absolute;
+  top: 0;
+  right: 20px;
+  bottom: 0;
+  width: 440px;
+  background-size: contain;
+  background-position: right center;
+  background-repeat: no-repeat;
+  opacity: 0.35;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Image-Specific Tuning */
+.hero-command-center .section-hero-bg {
+  background-image: url('../images/sections/command-center.jpg');
+}
+
+.hero-resource-inventory .section-hero-bg {
+  background-image: url('../images/sections/resource-inventory.jpg');
+}
+
+.hero-organization-directory .section-hero-bg {
+  background-image: url('../images/sections/organization-directory.jpg');
+}
+
+.hero-requests-queue .section-hero-bg {
+  background-image: url('../images/sections/requests-queue.jpg');
+}
+
+.hero-allocation-center .section-hero-bg {
+  background-image: url('../images/sections/allocation-center.jpg');
+}
+
+.hero-scheduling-simulator .section-hero-bg {
+  background-image: url('../images/sections/scheduling-simulator.jpg');
+}
+
+.hero-bankers-simulator .section-hero-bg {
+  background-image: url('../images/sections/bankers-simulator.png');
+}
+
+.hero-performance-metrics .section-hero-bg {
+  background-image: url('../images/sections/performance-metrics.png');
+}
+
+.hero-system-status .section-hero-bg {
+  background-image: url('../images/sections/system-status.jpg');
+}
