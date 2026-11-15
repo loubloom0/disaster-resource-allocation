@@ -32,10 +32,6 @@
     grid-template-columns: 1fr;
   }
 
-  .section-hero.layout-b .section-hero-aside {
-    display: none;
-  }
-
   .grid.two {
     grid-template-columns: 1fr;
   }

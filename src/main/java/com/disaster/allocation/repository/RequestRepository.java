@@ -31,10 +31,14 @@ public class RequestRepository {
     }
 
     public ResourceRequest insert(long orgId, long resId, int qty, int priority, int maxClaim, int workUnits) {
+        return insert(orgId, resId, qty, priority, maxClaim, workUnits, null);
+    }
+
+    public ResourceRequest insert(long orgId, long resId, int qty, int priority, int maxClaim, int workUnits, Long createdBy) {
         Long id = jdbc.queryForObject(
                 "INSERT INTO resource_requests (organization_id, resource_id, requested_quantity, priority, "
-                        + "max_claim, work_units) VALUES (?,?,?,?,?,?) RETURNING id",
-                Long.class, orgId, resId, qty, priority, maxClaim, workUnits);
+                        + "max_claim, work_units, created_by_user_id) VALUES (?,?,?,?,?,?,?) RETURNING id",
+                Long.class, orgId, resId, qty, priority, maxClaim, workUnits, createdBy);
         return findById(id).orElseThrow();
     }
 
@@ -47,6 +51,36 @@ public class RequestRepository {
 
     public Optional<ResourceRequest> findById(long id) {
         return jdbc.query(SELECT + "WHERE q.id = ?", MAP, id).stream().findFirst();
+    }
+
+    public boolean isOwnedBy(long id, long userId) {
+        Boolean found = jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM resource_requests WHERE id=? AND created_by_user_id=?)",
+                Boolean.class, id, userId);
+        return Boolean.TRUE.equals(found);
+    }
+
+    public List<ResourceRequest> findForOrganization(long organizationId, String status) {
+        String sql = SELECT + "WHERE q.organization_id=? " + (status == null || status.isBlank() ? "" : "AND q.status=? ")
+                + "ORDER BY q.arrival_seq DESC";
+        return status == null || status.isBlank() ? jdbc.query(sql, MAP, organizationId)
+                : jdbc.query(sql, MAP, organizationId, status);
+    }
+
+    public List<ResourceRequest> findForUser(long organizationId, long userId, String status) {
+        String sql = SELECT + "WHERE q.organization_id=? AND q.created_by_user_id=? "
+                + (status == null || status.isBlank() ? "" : "AND q.status=? ") + "ORDER BY q.arrival_seq DESC";
+        return status == null || status.isBlank() ? jdbc.query(sql, MAP, organizationId, userId)
+                : jdbc.query(sql, MAP, organizationId, userId, status);
+    }
+
+    public void addEvent(long requestId, Long actor, String type, String from, String to, String details) {
+        jdbc.update("INSERT INTO request_events(request_id,actor_user_id,event_type,from_status,to_status,details) "
+                + "VALUES (?,?,?,?,?,?::jsonb)", requestId, actor, type, from, to, details);
+    }
+
+    public List<java.util.Map<String, Object>> events(long requestId) {
+        return jdbc.queryForList("SELECT id,event_type AS \"eventType\",from_status AS \"fromStatus\",to_status AS \"toStatus\",details,created_at AS \"createdAt\" "
+                + "FROM request_events WHERE request_id=? ORDER BY created_at,id", requestId);
     }
 
     /** Row lock on the request itself so the same request cannot be allocated twice concurrently. */

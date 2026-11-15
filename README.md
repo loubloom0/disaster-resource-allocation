@@ -9,25 +9,24 @@ It is **not** connected to real emergency services and makes no real dispatch de
 
 Team: Himanshu Pokhriyal, Abhinav Gupta, Aayush Nautiyal, Rishabh Joshi.
 
-## Verification status (read this first)
+## Verification status
 
-The environment this version was completed in had **no Maven, no PostgreSQL and no network access**. So:
+Verified in the configured WSL environment on 2026-11-15:
 
 | Item | Status |
 |---|---|
-| Scheduler + Banker's code (unchanged) and its 24 original tests | compiled with `javac -Xlint:all`; **24/24 pass** (stand-in JUnit runner) |
-| `BankersSnapshotTest` (matrices built from claims / holdings / inventory) | compiled; **5/5 pass** (same runner) |
-| All new backend code (controllers, services, repositories, engine) | **type-checked only** against hand-written stand-ins for the Spring/JDBC APIs. Not built with real Spring Boot. |
-| Dashboard JavaScript | `node --check` syntax OK. **Never opened in a browser, never run against the API.** |
-| PostgreSQL connectivity, SQL statements, `SELECT ... FOR UPDATE`, constraints | **written, not executed**. No database was available. |
-| Integration tests (`*IT.java`: CRUD, allocation, rollback, 7+7 vs 10 race, constraints, REST) | **written, never run**. They need PostgreSQL and are skipped when `DB_PASSWORD` is unset. |
+| Maven test suite | `mvn clean test` with `.env` loaded: **65 tests passed, 0 failures, 0 errors, 0 skipped** |
+| PostgreSQL integration coverage | CRUD, constraints, allocation, concurrency, rollback, authentication, approvals, and tenant-access tests ran against PostgreSQL |
+| Dashboard JavaScript | `node --check src/main/resources/static/js/app.js` passed |
+| Browser | Current app launch was confirmed by the local browser tab title; browser automation was stopped by Escape before the final registration selector/screenshots could be captured. Live API discovery returned 11 organizations. |
+| Security check | Health/discovery APIs returned 200; protected dashboard returned 401 without a session |
 
-So the claim "works end to end" has **not** been verified yet. The first real run on your machine
-(`mvn clean package` with the database up) is the verification step. If anything fails, send the error output.
+Startup provisioned the initial System Administrator and Dispatcher. Their one-time credentials are stored outside the repository at
+`~/.config/dras/initial-accounts.txt`; both accounts must change their passwords on first sign-in.
 
 ## What is implemented
 
-* **Database** (unchanged): 9 tables, CHECK/FK/UNIQUE constraints, 7 indexes, seed data, idempotent `scripts/setup-db.sh`.
+* **Database**: V1/V2 retain the original resource-allocation schema and seed data. Additive V3–V6 migrations add auth, membership, auditing, alerts, request ownership/events, and manager approval support without resetting existing records. `scripts/setup-db.sh` is idempotent.
 * **REST API** (`controller/`, `service/`, `repository/` with parameterised JDBC SQL, no ORM):
   organizations, maximum claims, resources, history, requests, allocations, scheduling, Banker's, dashboard,
   metrics, system status. Validation via Bean Validation; errors via `GlobalExceptionHandler` (400/404/409; PostgreSQL
@@ -89,6 +88,9 @@ Run only the integration tests: `mvn test -Dtest='*IT'`. Demo with rollback enab
 
 | Area | Endpoints |
 |---|---|
+| Authentication | `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me`, `POST /api/auth/change-password`, public `GET /api/auth/organizations`, public `GET /api/auth/organization-matches?name=` |
+| Administration | `GET /api/admin/approvals`, `POST /api/admin/approvals/{id}/approve`, `POST /api/admin/approvals/{id}/approve-new-organization`, `POST /api/admin/approvals/{id}/reject`, `GET /api/admin/users`, `PUT /api/admin/users/{id}/role`, `GET /api/admin/audit-logs` |
+| Organization members / alerts | `GET /api/organizations/{id}/members`, `PUT /api/organizations/{id}/members/{userId}/status`, `GET /api/alerts`, `POST /api/alerts/{id}/acknowledge` |
 | Organizations | `GET/POST /api/organizations`, `GET/PUT/DELETE /api/organizations/{id}`, `GET/PUT /api/organizations/{id}/claims` |
 | Resources | `GET/POST /api/resources`, `GET/PUT/DELETE /api/resources/{id}`, `GET /api/resources/history?resourceId=&limit=` |
 | Requests | `GET /api/requests?status=`, `POST /api/requests`, `GET /api/requests/{id}`, `PUT /api/requests/{id}/status`, `POST /api/requests/{id}/allocate` |
@@ -113,6 +115,50 @@ curl -X POST localhost:8080/api/scheduling/simulate -H 'Content-Type: applicatio
 curl -X POST localhost:8080/api/bankers/evaluate -H 'Content-Type: application/json' \
   -d '{"available":[3,3,2],"max":[[7,5,3],[3,2,2],[9,0,2],[2,2,2],[4,3,3]],"allocation":[[0,1,0],[2,0,0],[3,0,2],[2,1,1],[0,0,2]],"process":1,"request":[1,0,2]}'
 ```
+
+## Authentication and organization access
+
+The current DRAS 2.0 build adds password-based sign-in, short-lived JWT access tokens, rotating HttpOnly refresh
+cookies, pending account approval, and role-aware API access. Public registration offers all four requested roles.
+Organization members select an active organization; managers request a proposed organization name; System Administrator
+and Dispatcher selections create privileged approval requests only. Every registration remains `PENDING_APPROVAL`; a
+requested role is never granted until an existing System Administrator approves it. Manager applications create neither
+an organization nor a membership until approval.
+
+| Role | Access |
+|---|---|
+| `SYSTEM_ADMIN` | Global operations, organization/resource administration, account approvals, role management, alerts, and audit logs. |
+| `DISPATCHER` | Global operational dashboard, queues, inventory, allocations, scheduling, Banker's checks, metrics, status, and alerts; no user or approval administration. |
+| `ORGANIZATION_MANAGER` | Own organization's dashboard, profile, claims, requests, allocations, metrics, and members. |
+| `ORGANIZATION_MEMBER` | Own organization summary, resource availability, and the member's own requests. |
+The roles are `SYSTEM_ADMIN`, `DISPATCHER`, `ORGANIZATION_MANAGER`, and `ORGANIZATION_MEMBER`. Tenant endpoints
+derive organization scope from the authenticated token; member request data is further scoped to the submitting
+member. Admin-only approval and audit APIs are under `/api/admin/**`; organization membership operations are under
+`/api/organizations/{organizationId}/members`. Public organization discovery is limited to
+`GET /api/auth/organizations` (active ID, name, and type only), plus the name-match helper used for manager
+applications. Organization management endpoints remain protected.
+
+Authentication schema changes are additive migrations V3–V6. V1 and V2 remain unchanged, and migrations do not reset
+existing records. At first normal application startup, a database-locked, idempotent provisioner creates
+`admin@dras.local` and `dispatcher@dras.local` only when no account with the corresponding global role exists. It
+creates distinct random temporary passwords, stores only BCrypt hashes in PostgreSQL, and writes the passwords to
+`~/.config/dras/initial-accounts.txt` with owner-only permissions. Both accounts must change their password at first
+sign-in; only the password-change endpoint is available until that succeeds. Open the file locally for the first sign-in,
+then remove it after changing both passwords: `rm ~/.config/dras/initial-accounts.txt`. The application never logs or
+returns the generated credentials. If a role already exists, bootstrap does not duplicate or reset that account; use its
+existing administrator-managed password-change process. For a lost existing administrator credential, perform recovery
+only through an authorized database operator in a controlled maintenance window, rotate the password hash, set
+`must_change_password=true`, increment `token_version`, and invalidate existing refresh tokens.
+
+For full database-backed verification, load the local `.env` in WSL without echoing it, then run:
+
+```bash
+set -a; source .env; set +a
+mvn clean test
+```
+
+The `*IT` integration tests use the configured PostgreSQL database and clean only the uniquely created test rows.
+Never use a database reset to run the suite against a database containing useful records.
 
 `./scripts/api-demo.sh` runs the two-organizations-7-units-each-vs-10-available race against a running server.
 
@@ -139,7 +185,7 @@ curl -X POST localhost:8080/api/bankers/evaluate -H 'Content-Type: application/j
 * Everything in the "Verification status" table marked unverified: **run the build and the integration tests first.**
 * No partial allocation (schema has `allow_partial`, engine is all-or-nothing); no worker-pool / semaphore layer;
   no automatic workload generator or benchmark of the indexes (no performance benefit is claimed).
-* No authentication; the API is open (academic simulator).
+* Authentication and backend role checks are implemented for the current four-role account model; map tracking and a dedicated Command Mode remain unimplemented because the project has no verified coordinates.
 * The dashboard has no automated browser tests; it was checked for JavaScript syntax only.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the architecture and ER diagrams.

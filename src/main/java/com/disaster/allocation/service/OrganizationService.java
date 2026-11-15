@@ -18,10 +18,12 @@ public class OrganizationService {
 
     private final OrganizationRepository orgs;
     private final ResourceRepository resources;
+    private final AuditService audit;
 
-    public OrganizationService(OrganizationRepository orgs, ResourceRepository resources) {
+    public OrganizationService(OrganizationRepository orgs, ResourceRepository resources, AuditService audit) {
         this.orgs = orgs;
         this.resources = resources;
+        this.audit = audit;
     }
 
     public List<Organization> list() {
@@ -33,11 +35,15 @@ public class OrganizationService {
     }
 
     public Organization create(OrganizationInput in) {
-        return orgs.insert(in); // UNIQUE(name) violations become 409 via GlobalExceptionHandler
+        Organization created = orgs.insert(in); // UNIQUE(name) violations become 409 via GlobalExceptionHandler
+        audit.record("ORGANIZATION_CREATED", "ORGANIZATION", created.id(), java.util.Map.of("name", created.name()));
+        return created;
     }
 
     public Organization update(long id, OrganizationInput in) {
-        return orgs.update(id, in).orElseThrow(() -> ApiException.notFound("Organization", id));
+        Organization updated = orgs.update(id, in).orElseThrow(() -> ApiException.notFound("Organization", id));
+        audit.record("ORGANIZATION_UPDATED", "ORGANIZATION", id, java.util.Map.of("name", updated.name()));
+        return updated;
     }
 
     @Transactional
@@ -49,6 +55,7 @@ public class OrganizationService {
         // Claims have no meaning without the organization: remove them in the same transaction.
         orgs.deleteClaims(id);
         orgs.delete(id);
+        audit.record("ORGANIZATION_DELETED", "ORGANIZATION", id, java.util.Map.of());
     }
 
     public List<Claim> claims(long id) {
@@ -61,6 +68,8 @@ public class OrganizationService {
         get(orgId);
         resources.findById(in.resourceId()).orElseThrow(() -> ApiException.notFound("Resource", in.resourceId()));
         orgs.upsertClaim(orgId, in.resourceId(), in.maxClaim());
+        audit.record("CLAIM_CHANGED", "ORGANIZATION", orgId,
+                java.util.Map.of("resourceId", in.resourceId(), "maxClaim", in.maxClaim()));
         return new Claim(orgId, in.resourceId(), in.maxClaim());
     }
 }

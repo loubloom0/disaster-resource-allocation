@@ -16,7 +16,7 @@ import com.disaster.allocation.safety.BankersAlgorithm;
  *   resources  = active REUSABLE resources (units come back, so the classic model applies)
  *   Available  = resources.available_quantity           (read under row lock during allocation)
  *   Max        = organization_claims.max_claim
- *   Allocation = SUM(quantity) of ACTIVE allocations per organization and resource
+ *   Allocation = SUM(remaining quantity) of ACTIVE allocations per organization and resource
  *   Need       = Max - Allocation   (computed by BankersAlgorithm)
  * If an organization already holds more than its declared claim (claim lowered later), Max is raised
  * to the holding so the algorithm's input stays valid; the snapshot records a warning.

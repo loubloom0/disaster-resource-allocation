@@ -1,6 +1,12 @@
 target/
-.env
+.env*
+!.env.example
 *.log
 .idea/
 .vscode/
 *.iml
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks

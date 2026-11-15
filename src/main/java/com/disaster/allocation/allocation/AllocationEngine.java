@@ -18,6 +18,7 @@ import com.disaster.allocation.repository.AllocationRepository;
 import com.disaster.allocation.repository.OrganizationRepository;
 import com.disaster.allocation.repository.RequestRepository;
 import com.disaster.allocation.repository.ResourceRepository;
+import com.disaster.allocation.service.AuditService;
 import com.disaster.allocation.safety.RequestDecision;
 
 /**
@@ -40,12 +41,14 @@ public class AllocationEngine {
     private final AllocationRepository allocations;
     private final OrganizationRepository organizations;
     private final boolean failureInjectionEnabled;
+    private final AuditService audit;
 
     public AllocationEngine(
             RequestRepository requests,
             ResourceRepository resources,
             AllocationRepository allocations,
             OrganizationRepository organizations,
+            AuditService audit,
             @Value("${dras.failure-injection.enabled:false}")
             boolean failureInjectionEnabled) {
 
@@ -53,6 +56,7 @@ public class AllocationEngine {
         this.resources = resources;
         this.allocations = allocations;
         this.organizations = organizations;
+        this.audit = audit;
         this.failureInjectionEnabled = failureInjectionEnabled;
     }
 
@@ -244,6 +248,10 @@ public class AllocationEngine {
                 qty,
                 "Allocated via " + algorithm
         );
+        requests.addEvent(req.id(), audit.actorId(), "ALLOCATION_APPROVED", req.status(), "ALLOCATED",
+                "{\"allocationId\":" + allocationId + ",\"algorithm\":\"" + algorithm + "\"}");
+        audit.record("ALLOCATION_COMPLETED", "ALLOCATION", allocationId,
+                java.util.Map.of("requestId", req.id(), "resourceId", target.id(), "quantity", qty, "algorithm", algorithm));
 
         resources.addHistory(
                 target.id(),
@@ -287,6 +295,7 @@ public class AllocationEngine {
                 "WAITING",
                 trunc(reason)
         );
+        requests.addEvent(req.id(), audit.actorId(), "REQUEST_WAITING", req.status(), "WAITING", "{}");
 
         return new AllocationOutcome(
                 req.id(),
@@ -310,6 +319,7 @@ public class AllocationEngine {
                 "REJECTED",
                 trunc(reason)
         );
+        requests.addEvent(req.id(), audit.actorId(), "REQUEST_REJECTED", req.status(), "REJECTED", "{}");
 
         return new AllocationOutcome(
                 req.id(),
@@ -343,6 +353,14 @@ public class AllocationEngine {
             rollbackFor = Exception.class
     )
     public Allocation release(long allocationId) {
+        return release(allocationId, null);
+    }
+
+    @Transactional(
+            isolation = Isolation.READ_COMMITTED,
+            rollbackFor = Exception.class
+    )
+    public Allocation release(long allocationId, Integer requestedQuantity) {
 
         // 1. Lock allocation.
         Allocation a = allocations.findByIdForUpdate(allocationId)
@@ -380,23 +398,41 @@ public class AllocationEngine {
             );
         }
 
-        // 5. Restore reusable inventory.
+        int quantity = requestedQuantity == null ? a.remainingQuantity() : requestedQuantity;
+        if (quantity < 1) {
+            throw ApiException.badRequest("Release quantity must be at least 1");
+        }
+        if (quantity > a.remainingQuantity()) {
+            throw ApiException.badRequest("Release quantity cannot exceed the remaining allocation of "
+                    + a.remainingQuantity());
+        }
+
+        // 5. Restore only the returned units. All release records and inventory changes commit together.
+        int availableBefore = r.availableQuantity();
         resources.applyDelta(
                 r.id(),
-                a.quantity()
+                quantity
         );
 
-        // 6. Update allocation history.
-        allocations.markReleased(allocationId);
+        // 6. Update allocation totals and append immutable release/audit history.
+        allocations.addReleasedQuantity(allocationId, quantity);
+        allocations.insertRelease(allocationId, r.id(), a.organizationId(), quantity, audit.actorId());
+        int remaining = a.remainingQuantity() - quantity;
+        requests.addEvent(a.requestId(), audit.actorId(), "ALLOCATION_RELEASED", null, null,
+                "{\"allocationId\":" + allocationId + ",\"quantity\":" + quantity
+                        + ",\"remainingQuantity\":" + remaining + "}");
+        audit.record("ALLOCATION_RELEASED", "ALLOCATION", allocationId,
+                java.util.Map.of("requestId", a.requestId(), "resourceId", a.resourceId(), "organizationId",
+                        a.organizationId(), "quantity", quantity, "remainingQuantity", remaining));
 
         resources.addHistory(
                 r.id(),
                 a.requestId(),
                 "RELEASE",
-                a.quantity(),
-                r.availableQuantity(),
-                r.availableQuantity() + a.quantity(),
-                "Allocation " + allocationId + " released"
+                quantity,
+                availableBefore,
+                availableBefore + quantity,
+                "Allocation " + allocationId + " returned " + quantity + " unit(s)"
         );
 
         // 7. Complete request if no active allocations remain.
@@ -407,6 +443,7 @@ public class AllocationEngine {
                     "COMPLETED",
                     "All allocations released"
             );
+            requests.addEvent(a.requestId(), audit.actorId(), "REQUEST_COMPLETED", "ALLOCATED", "COMPLETED", "{}");
         }
 
         return allocations.findById(allocationId)

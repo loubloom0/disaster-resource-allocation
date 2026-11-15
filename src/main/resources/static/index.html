@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>DRAS 2.0 – Emergency Operations Center</title>
+  <title>DRAS 2.0 – Disaster Resource Allocation System</title>
+  <meta name="description" content="Coordinate disaster response resources, organisations and requests with the DRAS academic operations simulator.">
   <!-- Google Fonts: Space Grotesk & Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/app.css">
 </head>
-<body>
-  <aside id="sidebar">
+<body class="auth-logged-out">
+  <aside id="sidebar" hidden>
     <div class="brand">
       <span class="logo">⛑</span>
       <div>
@@ -19,18 +20,23 @@
         <small>EOC Command Center</small>
       </div>
     </div>
-    <nav id="nav">
-      <a href="#dashboard"><span class="nav-icon">📊</span> Command Center</a>
-      <a href="#inventory"><span class="nav-icon">📦</span> Resource Inventory</a>
-      <a href="#organizations"><span class="nav-icon">🏢</span> Organization Directory</a>
-      <a href="#requests"><span class="nav-icon">📥</span> Requests Queue</a>
-      <a href="#allocations"><span class="nav-icon">⚡</span> Allocation Center</a>
-      <a href="#scheduling"><span class="nav-icon">⏱</span> Scheduling Simulator</a>
-      <a href="#bankers"><span class="nav-icon">🔒</span> Banker's Simulator</a>
-      <a href="#metrics"><span class="nav-icon">📈</span> Performance Metrics</a>
-      <a href="#system"><span class="nav-icon">🖥</span> System Status</a>
+    <nav id="nav" hidden>
+      <a href="#dashboard" hidden><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h6V4H4v9Zm10 7h6V11h-6v9ZM4 20h6v-3H4v3Zm10-13h6V4h-6v3Z"/></svg> Command Center</a>
+      <a href="#inventory" hidden><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5v5l-9 5-9-5v-5Z"/></svg> Resource Inventory</a>
+      <a href="#organizations" hidden><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5ZM5 12v5l7 4 7-4v-5M12 13v8"/></svg> Organization Directory</a>
+      <a href="#requests" hidden><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg> Requests Queue</a>
+      <a href="#allocations" hidden><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h13l-3-3m6 13H7l3 3M17 4l3 3-3 3M7 14l-3 3 3 3"/></svg> Allocation Center</a>
+      <a href="#scheduling" hidden><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> Scheduling Simulator</a>
+      <a href="#bankers" hidden><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v6c0 5-3 8-8 10-5-2-8-5-8-10V6l8-3Zm-4 9 3 3 5-6"/></svg> Banker's Simulator</a>
+      <a href="#metrics" hidden><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V4m0 16h17M8 16v-4m5 4V7m5 9V9"/></svg> Performance Metrics</a>
+      <a href="#system" hidden><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="6" rx="1"/><rect x="4" y="14" width="16" height="6" rx="1"/><path d="M8 7h.01M8 17h.01M12 7h5M12 17h5"/></svg> System Status</a>
+      <a href="#approvals" hidden><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 9l2 2 5-5M8 15h8"/></svg> Account Approvals</a>
+      <a href="#users" hidden><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-4 2-6 6-6s6 2 6 6m2-10a3 3 0 1 0 0-6m1 9c2 0 3 1 4 3v4"/></svg> User Management</a>
+      <a href="#members" hidden><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2"/><path d="M3 20c0-4 2-6 6-6s6 2 6 6m1-4c3 0 5 1 5 4"/></svg> Organization Members</a>
+      <a href="#alerts" hidden><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3Zm0 6v5m0 3h.01"/></svg> Alerts</a>
+      <a href="#audit" hidden><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg> Audit Logs</a>
     </nav>
-    <div class="user-profile-badge">
+    <div class="user-profile-badge" hidden>
       <div class="user-profile-avatar">SA</div>
       <div class="user-profile-info">
         <div class="user-profile-name">System Operator</div>
@@ -42,9 +48,10 @@
   </aside>
   <main>
     <header>
-      <button id="menuBtn" aria-label="Menu">☰</button>
+      <button id="menuBtn" aria-label="Menu" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
       <h1 id="pageTitle">Command Center</h1>
-      <span id="dbBadge" class="badge">checking…</span>
+      <span id="dbBadge" class="badge" hidden>checking…</span>
+      <button id="authAction" class="btn sec sm" type="button" hidden>Sign out</button>
     </header>
     <section id="view"></section>
   </main>

@@ -128,3 +128,46 @@ benefit is claimed** until it is measured on generated workloads (Phase 8).
 
 Not implemented from the original diagram: the `concurrency/` worker pool / semaphore package and a separate
 `recovery/` package (rollback logging lives in `SchedulingService` and `SimulationRepository`).
+
+## 6. Authentication and tenant boundaries (DRAS 2.0)
+
+### Authentication flow
+
+* `POST /api/auth/register` creates a pending user and approval request for any of the four roles. Members must select
+  an active organization; managers submit a proposed organization name and receive possible-name-match feedback. A
+  manager application has no organization membership until an administrator approves it. Privileged selections create
+  pending global-role requests only; public registration never assigns a global role.
+* `POST /api/auth/login` verifies BCrypt credentials and rejects pending, disabled, or inactive-organization
+  accounts. It returns a short-lived JWT and sets an HttpOnly refresh cookie. `POST /api/auth/refresh` rotates the
+  stored refresh-token hash and rejects reuse; logout revokes the cookie token.
+* JWT claims include the account ID, roles, organization ID (when applicable), and token version. Each request
+  validates the signature, account status, membership/org status, and token version against PostgreSQL.
+* On normal startup, the one-time database-locked provisioner creates missing `admin@dras.local` and
+  `dispatcher@dras.local` accounts with distinct random temporary passwords. Only BCrypt hashes are stored in PostgreSQL;
+  the local-only credential file is `~/.config/dras/initial-accounts.txt` (mode 600). Both accounts must change their
+  passwords before accessing other API routes. Test profiles do not run the provisioner.
+
+### Authorization boundaries
+
+| Role | Server-enforced scope |
+|---|---|
+| `SYSTEM_ADMIN` | Global administration, approvals, user roles, audit history, organization/resource management, diagnostics |
+| `DISPATCHER` | Global operational queue, allocation, scheduling, alerts, and minimized organization summaries; no user/approval administration |
+| `ORGANIZATION_MANAGER` | Own organization, claims/profile, organization requests/allocations/metrics, and own membership administration |
+| `ORGANIZATION_MEMBER` | Own organization summary, resource availability, own requests; no claim/member/admin operations |
+
+Controllers use `AccessControl` for operation checks and query services/repositories scope rows by trusted JWT
+organization and user IDs. Tenant request submission overrides any client-supplied organization ID. Public
+organization discovery is a separate minimal DTO endpoint and does not make organization management APIs public.
+
+### Additive authentication schema
+
+V3 introduces users, organization memberships, approval requests, hashed refresh tokens, audit logs, alerts, and
+acknowledgements. V4 adds request ownership and actual request lifecycle events. V5 extends approval requests for
+manager applications, possible organization matches, and administrator-selected approval association. All are
+additive migrations; V1/V2 are retained. Existing rows are preserved and approved-request rows are backfilled from
+their existing membership during V5.
+
+`test` is the permissive test profile for legacy API tests. Auth integration tests additionally activate
+`auth-test`, which excludes the legacy test filter chain and activates production `SecurityConfig` and production
+`AccessControl` behavior. The PostgreSQL-backed tests create uniquely named test rows and clean only those rows.

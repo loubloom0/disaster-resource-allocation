@@ -6,6 +6,8 @@ import java.util.Map;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -15,7 +17,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
-    public ResponseEntity<Map<String, Object>> api(ApiException e) {
+    public ResponseEntity<?> api(ApiException e, HttpServletRequest request) {
+        if ("/api/events/stream".equals(request.getRequestURI())
+                && request.getHeader("Accept") != null
+                && request.getHeader("Accept").contains(MediaType.TEXT_EVENT_STREAM_VALUE)) {
+            // Before an SSE stream exists, communicate authentication/authorization failures
+            // through the HTTP status. A JSON body is not a valid text/event-stream response.
+            return ResponseEntity.status(e.status()).build();
+        }
         return body(e.status(), e.getMessage());
     }
 

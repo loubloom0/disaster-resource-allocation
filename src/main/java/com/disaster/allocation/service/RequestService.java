@@ -27,21 +27,38 @@ public class RequestService {
     private final OrganizationRepository orgs;
     private final ResourceRepository resources;
     private final AllocationRepository allocations;
+    private final AuditService audit;
 
     public RequestService(
             RequestRepository requests,
             OrganizationRepository orgs,
             ResourceRepository resources,
-            AllocationRepository allocations) {
+            AllocationRepository allocations,
+            AuditService audit) {
 
         this.requests = requests;
         this.orgs = orgs;
         this.resources = resources;
         this.allocations = allocations;
+        this.audit = audit;
     }
 
     public List<ResourceRequest> list(String status) {
         return requests.findAll(status);
+    }
+
+    public List<ResourceRequest> listForOrganization(long organizationId, String status) {
+        return requests.findForOrganization(organizationId, status);
+    }
+
+    public List<ResourceRequest> listForUser(long organizationId, long userId, String status) {
+        return requests.findForUser(organizationId, userId, status);
+    }
+
+    public boolean ownedBy(long requestId, long userId) { return requests.isOwnedBy(requestId, userId); }
+    public List<java.util.Map<String, Object>> timeline(long requestId) {
+        get(requestId);
+        return requests.events(requestId);
     }
 
     public ResourceRequest get(long id) {
@@ -55,6 +72,11 @@ public class RequestService {
      */
     @Transactional
     public ResourceRequest submit(RequestInput in) {
+        return submit(in, null);
+    }
+
+    @Transactional
+    public ResourceRequest submit(RequestInput in, Long createdBy) {
 
         Organization org = orgs.findById(in.organizationId())
                 .orElseThrow(() -> ApiException.notFound(
@@ -106,14 +128,19 @@ public class RequestService {
         int work = in.workUnits() == null ? 1 : in.workUnits();
 
         // Insert request into database
-        return requests.insert(
+        ResourceRequest created = requests.insert(
                 org.id(),
                 res.id(),
                 in.quantity(),
                 in.priority(),
                 claim.maxClaim(),
-                work
+                work,
+                createdBy
         );
+        requests.addEvent(created.id(), createdBy, "REQUEST_SUBMITTED", null, "PENDING", "{}");
+        audit.record("REQUEST_CREATED", "REQUEST", created.id(),
+                java.util.Map.of("organizationId", org.id(), "resourceId", res.id(), "quantity", in.quantity()));
+        return created;
     }
 
     /**
@@ -124,6 +151,11 @@ public class RequestService {
      */
     @Transactional
     public ResourceRequest updateStatus(long id, StatusInput in) {
+        return updateStatus(id, in, null);
+    }
+
+    @Transactional
+    public ResourceRequest updateStatus(long id, StatusInput in, Long actor) {
 
         ResourceRequest cur = requests.findByIdForUpdate(id)
                 .orElseThrow(() -> ApiException.notFound("Request", id));
@@ -148,6 +180,9 @@ public class RequestService {
         }
 
         requests.setStatus(id, in.status(), in.reason());
+        requests.addEvent(id, actor, "STATUS_CHANGED", cur.status(), in.status(), "{}");
+        audit.record("REQUEST_STATUS_CHANGED", "REQUEST", id,
+                java.util.Map.of("from", cur.status(), "to", in.status()));
 
         return get(id);
     }

@@ -15,9 +15,11 @@ import com.disaster.allocation.repository.ResourceRepository;
 public class ResourceService {
 
     private final ResourceRepository resources;
+    private final AuditService audit;
 
-    public ResourceService(ResourceRepository resources) {
+    public ResourceService(ResourceRepository resources, AuditService audit) {
         this.resources = resources;
+        this.audit = audit;
     }
 
     public List<Resource> list() {
@@ -32,6 +34,7 @@ public class ResourceService {
     public Resource create(ResourceInput in) {
         Resource r = resources.insert(in);
         resources.addHistory(r.id(), null, "CREATE", r.totalQuantity(), 0, r.availableQuantity(), "Resource created");
+        audit.record("RESOURCE_CREATED", "RESOURCE", r.id(), java.util.Map.of("name", r.name(), "quantity", r.totalQuantity()));
         return r;
     }
 
@@ -50,6 +53,7 @@ public class ResourceService {
         Resource updated = resources.update(id, in, newAvailable);
         resources.addHistory(id, null, "UPDATE", newAvailable - cur.availableQuantity(), cur.availableQuantity(),
                 newAvailable, "Resource edited");
+        audit.record("RESOURCE_UPDATED", "RESOURCE", id, java.util.Map.of("name", updated.name(), "quantity", updated.totalQuantity()));
         return updated;
     }
 
@@ -61,6 +65,7 @@ public class ResourceService {
         }
         resources.deleteHistory(id);
         resources.delete(id);
+        audit.record("RESOURCE_DELETED", "RESOURCE", id, java.util.Map.of());
     }
 
     public List<History> history(Long resourceId, int limit) {

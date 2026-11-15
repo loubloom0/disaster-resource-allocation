@@ -113,3 +113,11 @@
     box-shadow: none !important;
   }
 }
+/* Real backend condition alerts shown in the command dashboard. */
+.alert-center { border-color: color-mix(in srgb, var(--critical) 35%, var(--border)); }
+.alert-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 14px 0; border-top: 1px solid var(--border); }
+.alert-row p { margin: 5px 0; }
+.alert-row small { color: var(--muted); }
+.alert-row.warning { border-left: 3px solid var(--warning); padding-left: 12px; }
+.alert-row.critical { border-left: 3px solid var(--critical); padding-left: 12px; }
+@media (max-width: 560px) { .alert-row { align-items: flex-start; flex-direction: column; } }

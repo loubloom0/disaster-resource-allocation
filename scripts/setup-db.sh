@@ -13,12 +13,20 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PSQL_ADMIN="${PSQL_ADMIN:-sudo -u postgres psql}"
 
 echo ">> creating role '$DB_USER' (if missing) and database '$DB_NAME'"
-# \gexec runs the generated CREATE ROLE statement only when the role is missing.
-$PSQL_ADMIN -v ON_ERROR_STOP=1 -v pw="$DB_PASSWORD" -v u="$DB_USER" <<'SQL'
-SELECT format('CREATE ROLE %I LOGIN PASSWORD %L', :'u', :'pw')
+# Keep the database password out of psql/sudo command-line arguments. The private
+# temporary SQL file is removed on success, failure, or interruption.
+role_sql="$(mktemp "${TMPDIR:-/tmp}/dras-role-setup.XXXXXX.sql")"
+chmod 600 "$role_sql"
+trap 'rm -f "$role_sql"' EXIT
+escaped_password=${DB_PASSWORD//\'/\'\'}
+cat >"$role_sql" <<SQL
+SELECT format('CREATE ROLE %I LOGIN PASSWORD %L', :'u', '$escaped_password')
 WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = :'u')
 \gexec
 SQL
+$PSQL_ADMIN -v ON_ERROR_STOP=1 -v u="$DB_USER" -f "$role_sql"
+rm -f "$role_sql"
+trap - EXIT
 $PSQL_ADMIN -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" | grep -q 1 \
   || $PSQL_ADMIN -v ON_ERROR_STOP=1 -c "CREATE DATABASE \"$DB_NAME\" OWNER \"$DB_USER\""
 

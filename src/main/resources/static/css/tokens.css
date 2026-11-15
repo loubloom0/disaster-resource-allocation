@@ -1,38 +1,45 @@
 /**
  * DRAS 2.0 Design Tokens & Color System
- * Monochromatic Industrial Graphite EOC Palette
+ * Sky blue and cream operational palette
  */
 
 :root {
   /* Surface colors */
-  --bg: #191A1D;
-  --sidebar: #101114;
-  --card: #23252A;
-  --panel: #2B2D32;
-  --panel2: #23252A;
-  --panel-elevated: #32353B;
-  --border: #383B42;
-  --border-subtle: #2C2E35;
-  --border-focus: #8DAFC4;
+  --sky: #87CEEB;
+  --sky-deep: #4AADD6;
+  --sky-light: #DFF3FC;
+  --cream: #FFFDF5;
+  --cream-soft: #F7F5EB;
+  --white: #FFFFFF;
+  --bg: var(--cream);
+  --sidebar: var(--cream-soft);
+  --card: var(--white);
+  --panel: var(--cream-soft);
+  --panel2: var(--white);
+  --panel-elevated: var(--sky-light);
+  --border: #D7E7ED;
+  --border-subtle: #E7EFF1;
+  --border-focus: var(--sky-deep);
 
   /* Typography colors */
-  --text-primary: #F4F4F2;
-  --text-secondary: #A5A7AD;
-  --text-muted: #777B83;
-  --text: #F4F4F2;
-  --muted: #A5A7AD;
+  --text-primary: #243746;
+  --text-secondary: #607786;
+  --text-muted: #607786;
+  --text: #243746;
+  --muted: #607786;
+  --secondary: var(--text-secondary);
 
   /* Semantic status colors */
   --critical: #EF5350;
   --warning: #F0A443;
   --success: #60B98B;
-  --info: #8DAFC4;
+  --info: var(--sky-deep);
 
   /* Status mapping aliases */
   --ok: var(--success);
   --warn: var(--warning);
   --bad: var(--critical);
-  --accent: #E2E4E8;
+  --accent: var(--sky-deep);
   --line: var(--border);
 
   /* Typography families */
@@ -58,9 +65,9 @@
   --radius-pill: 9999px;
 
   /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+  --shadow-sm: 0 1px 3px rgba(36, 55, 70, 0.06);
+  --shadow-md: 0 4px 12px rgba(36, 55, 70, 0.08);
+  --shadow-lg: 0 8px 24px rgba(36, 55, 70, 0.14);
   --shadow-glow-critical: 0 0 16px rgba(239, 83, 80, 0.25);
   --shadow-glow-warning: 0 0 16px rgba(240, 164, 67, 0.25);
 

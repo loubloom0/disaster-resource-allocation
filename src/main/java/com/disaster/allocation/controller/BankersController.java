@@ -3,6 +3,7 @@ package com.disaster.allocation.controller;
 import java.util.Map;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.disaster.allocation.model.Dto.BankersInput;
 import com.disaster.allocation.service.BankersService;
@@ -11,6 +12,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/bankers")
+@PreAuthorize("hasAnyRole('SYSTEM_ADMIN','DISPATCHER')")
 public class BankersController {
 
     private final BankersService service;

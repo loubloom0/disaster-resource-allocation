@@ -3,6 +3,7 @@ package com.disaster.allocation.controller;
 import java.util.Map;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.disaster.allocation.model.Dto.SimInput;
 import com.disaster.allocation.service.SchedulingService;
@@ -11,6 +12,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/scheduling")
+@PreAuthorize("hasAnyRole('SYSTEM_ADMIN','DISPATCHER')")
 public class SchedulingController {
 
     private final SchedulingService service;

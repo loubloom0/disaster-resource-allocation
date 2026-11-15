@@ -16,6 +16,8 @@ public final class Dto {
     public record Organization(Long id, String name, String orgType, String location, String contactInfo,
                                boolean active, OffsetDateTime createdAt) { }
 
+    public record OrganizationSummary(Long id, String name, String orgType, String location, boolean active) { }
+
     public record OrganizationInput(
             @NotBlank @Size(max = 120) String name,
             @NotBlank @jakarta.validation.constraints.Pattern(regexp = "HOSPITAL|SHELTER|RESCUE_TEAM",
@@ -27,6 +29,8 @@ public final class Dto {
     public record Resource(Long id, String name, String category, int totalQuantity, int availableQuantity,
                            int allocatedQuantity, boolean reusable, String location, boolean active,
                            OffsetDateTime lastUpdated) { }
+
+    public record ResourceAvailability(Long id, String name, String category, int availableQuantity, boolean reusable) { }
 
     public record ResourceInput(
             @NotBlank @Size(max = 120) String name,
@@ -62,7 +66,10 @@ public final class Dto {
 
     public record Allocation(Long id, Long requestId, Long organizationId, String organizationName, Long resourceId,
                              String resourceName, int quantity, String status, OffsetDateTime allocatedAt,
-                             OffsetDateTime releasedAt) { }
+                             OffsetDateTime releasedAt, int releasedQuantity, int remainingQuantity,
+                             boolean reusable) { }
+
+    public record AllocationReleaseInput(Integer quantity) { }
 
     public record History(Long id, Long resourceId, String resourceName, Long requestId, String action,
                           int quantityChange, int availableBefore, int availableAfter, String note,
@@ -84,4 +91,27 @@ public final class Dto {
 
     public record BankersInput(@NotNull int[] available, @NotNull int[][] max, @NotNull int[][] allocation,
                                Integer process, int[] request) { }
+
+    public record AnalyticsDashboard(String scope, int trendDays, ResourceSummary resources,
+                                     List<ResourceCategoryAnalytics> resourceCategories,
+                                     RequestSummary requests, List<RequestStatusAnalytics> requestStatuses,
+                                     List<RequestCategoryAnalytics> requestCategories,
+                                     List<AllocationTrend> allocationTrends) { }
+
+    public record ResourceSummary(long resourceCount, long totalUnits, long availableUnits, long allocatedUnits,
+                                  long shortageCount, double utilizationPercentage) { }
+
+    public record ResourceCategoryAnalytics(String category, long resourceCount, long totalUnits,
+                                            long availableUnits, long allocatedUnits, long shortageCount,
+                                            double utilizationPercentage) { }
+
+    public record RequestSummary(long total, long pending, long allocated, long processing,
+                                 long rejected, long completed, long critical) { }
+
+    public record RequestStatusAnalytics(String status, long count) { }
+
+    public record RequestCategoryAnalytics(String category, long requestedUnits, long allocatedUnits) { }
+
+    public record AllocationTrend(java.time.LocalDate date, long allocatedUnits, long releasedUnits,
+                                  long allocationCount) { }
 }

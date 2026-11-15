@@ -42,6 +42,46 @@ public class DashboardService {
         return m;
     }
 
+    /** Tenant dashboard uses the same response fields while scoping request data to the authenticated organization. */
+    public Map<String, Object> organizationStats(long organizationId, Long userId, boolean manager) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("organizations", 1L);
+        m.put("activeOrganizations", num("SELECT count(*) FROM organizations WHERE id=? AND active", organizationId));
+        String owner = manager ? "" : " AND q.created_by_user_id=?";
+        Object[] requestArgs = manager ? new Object[]{organizationId} : new Object[]{organizationId, userId};
+        String scope = " FROM resource_requests q WHERE q.organization_id=?" + owner;
+        m.put("pendingRequests", num("SELECT count(*)" + scope + " AND q.status IN ('PENDING','WAITING')", requestArgs));
+        m.put("completedAllocations", num("SELECT count(*) FROM allocations a JOIN resource_requests q ON q.id=a.request_id WHERE q.organization_id=?" + owner,
+                requestArgs));
+        m.put("activeAllocations", num("SELECT count(*) FROM allocations a JOIN resource_requests q ON q.id=a.request_id WHERE q.organization_id=?" + owner + " AND a.status='ACTIVE'",
+                requestArgs));
+        m.put("requestsByStatus", jdbc.queryForList("SELECT q.status,count(*) AS count" + scope + " GROUP BY q.status ORDER BY q.status", requestArgs));
+        m.put("resources", jdbc.queryForList("SELECT id,name,category,available_quantity AS \"availableQuantity\",reusable "
+                + "FROM resources WHERE active=true ORDER BY name,id"));
+        String eventScope = "q.organization_id=?" + owner;
+        m.put("recentActivity", jdbc.queryForList("SELECT h.id,h.resource_id AS \"resourceId\",r.name AS \"resourceName\",h.request_id AS \"requestId\","
+                + "h.action,h.quantity_change AS \"quantityChange\",h.available_before AS \"availableBefore\",h.available_after AS \"availableAfter\","
+                + "h.note,h.created_at AS \"createdAt\" FROM resource_history h JOIN resources r ON r.id=h.resource_id "
+                + "JOIN resource_requests q ON q.id=h.request_id WHERE " + eventScope + " ORDER BY h.created_at DESC LIMIT 15", requestArgs));
+        return m;
+    }
+
+    public Map<String, Object> organizationMetrics(long organizationId, Long userId, boolean manager) {
+        Map<String, Object> metrics = new LinkedHashMap<>();
+        String owner = manager ? "" : " AND created_by_user_id=?";
+        Object[] args = manager ? new Object[]{organizationId} : new Object[]{organizationId, userId};
+        metrics.put("runs", List.of());
+        metrics.put("failureLog", List.of());
+        metrics.put("requestOutcomes", jdbc.queryForList("SELECT status,count(*) AS count FROM resource_requests "
+                + "WHERE organization_id=?" + owner + " GROUP BY status ORDER BY status", args));
+        metrics.put("startLatencyByPriority", jdbc.queryForList("SELECT priority,count(*) AS requests,"
+                + "round(avg(EXTRACT(EPOCH FROM (processing_started_at-arrival_time)))::numeric,3) AS avg_seconds_to_start "
+                + "FROM resource_requests WHERE organization_id=?" + owner + " AND processing_started_at IS NOT NULL "
+                + "GROUP BY priority ORDER BY priority DESC", args));
+        metrics.put("scope", "ORGANIZATION");
+        return metrics;
+    }
+
     public Map<String, Object> metrics() {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("runs", simulations.recentRuns(25));
@@ -58,6 +98,11 @@ public class DashboardService {
 
     private long num(String sql) {
         Long n = jdbc.queryForObject(sql, Long.class);
+        return n == null ? 0 : n;
+    }
+
+    private long num(String sql, Object... args) {
+        Long n = jdbc.queryForObject(sql, Long.class, args);
         return n == null ? 0 : n;
     }
 }

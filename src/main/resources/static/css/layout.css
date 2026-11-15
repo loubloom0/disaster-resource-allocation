@@ -2,6 +2,15 @@
  * DRAS 2.0 Layout, Sidebar & Grid Architecture
  */
 
+[hidden] { display: none !important; }
+.nav-icon { width: 16px; height: 16px; flex: 0 0 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+#menuBtn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+body.auth-logged-out { display: block; }
+body.auth-logged-out #sidebar { display: none; }
+body.auth-logged-out main { width: min(100%, 1100px); margin: 0 auto; padding-inline: clamp(12px, 3vw, 36px); }
+body.auth-logged-out header { border-bottom: 0; }
+body.auth-logged-out #view { min-height: calc(100vh - 90px); }
+
 /* Main Container */
 #sidebar {
   width: 256px;
@@ -16,7 +25,7 @@
   display: flex;
   flex-direction: column;
   z-index: 20;
-  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 2px 0 12px rgba(36, 55, 70, 0.06);
 }
 
 .brand {
@@ -37,7 +46,7 @@
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  color: var(--critical);
+  color: var(--sky-deep);
 }
 
 .brand b {
@@ -80,18 +89,18 @@
 }
 
 #nav a:hover {
-  background-color: var(--card);
+  background-color: var(--sky-light);
   color: var(--text-primary);
-  border-color: var(--border-subtle);
+  border-color: var(--border);
   transform: translateX(3px);
 }
 
 #nav a.active {
-  background-color: var(--card);
+  background-color: var(--sky-light);
   color: var(--text-primary);
   font-weight: 600;
   border-color: var(--border);
-  border-left: 3px solid var(--text-primary);
+  border-left: 3px solid var(--sky-deep);
 }
 
 /* User Profile Badge in Sidebar */
@@ -166,7 +175,7 @@ header {
   gap: var(--space-md);
   padding: var(--space-md) var(--space-xl);
   border-bottom: 1px solid var(--border);
-  background: rgba(25, 26, 29, 0.88);
+  background: rgba(255, 253, 245, 0.94);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   position: sticky;

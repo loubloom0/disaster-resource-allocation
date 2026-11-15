@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ActiveProfiles;
 
 import com.disaster.allocation.model.Dto.Organization;
 import com.disaster.allocation.model.Dto.OrganizationInput;
@@ -24,6 +25,7 @@ import com.disaster.allocation.model.Dto.ClaimInput;
  * variables. Each test creates its own uniquely named organizations/resources and removes only those rows
  * afterwards, so the seed data is untouched.
  */
+@ActiveProfiles("test")
 abstract class DrasIntegrationBase {
 
     @Autowired protected JdbcTemplate jdbc;
@@ -60,7 +62,7 @@ abstract class DrasIntegrationBase {
     }
 
     protected long activeUnits(Resource r) {
-        Long n = jdbc.queryForObject("SELECT COALESCE(SUM(quantity),0) FROM allocations WHERE resource_id=? AND status='ACTIVE'",
+        Long n = jdbc.queryForObject("SELECT COALESCE(SUM(quantity - released_quantity),0) FROM allocations WHERE resource_id=? AND status='ACTIVE'",
                 Long.class, r.id());
         return n;
     }
@@ -69,6 +71,7 @@ abstract class DrasIntegrationBase {
     void cleanup() {
         for (long rid : resIds) {
             jdbc.update("DELETE FROM failure_recovery_logs WHERE request_id IN (SELECT id FROM resource_requests WHERE resource_id=?)", rid);
+            jdbc.update("DELETE FROM allocation_releases WHERE resource_id=?", rid);
             jdbc.update("DELETE FROM allocations WHERE resource_id=?", rid);
             jdbc.update("DELETE FROM resource_history WHERE resource_id=?", rid);
             jdbc.update("DELETE FROM resource_requests WHERE resource_id=?", rid);
@@ -77,6 +80,7 @@ abstract class DrasIntegrationBase {
         }
         for (long oid : orgIds) {
             jdbc.update("DELETE FROM failure_recovery_logs WHERE request_id IN (SELECT id FROM resource_requests WHERE organization_id=?)", oid);
+            jdbc.update("DELETE FROM allocation_releases WHERE organization_id=?", oid);
             jdbc.update("DELETE FROM allocations WHERE request_id IN (SELECT id FROM resource_requests WHERE organization_id=?)", oid);
             jdbc.update("DELETE FROM resource_requests WHERE organization_id=?", oid);
             jdbc.update("DELETE FROM organization_claims WHERE organization_id=?", oid);
